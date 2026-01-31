@@ -3,24 +3,39 @@ package main
 import (
 	"fmt"
 	"log"
-	"net"
+	"net/http"
+	"net/url"
 )
-func parseURL(raw string) *net.URL {
-	urll, err := url.Parse(raw)
+
+const listenPort = ":9000"
+
+func mustParseURL(raw string) *url.URL {
+	u, err := url.Parse(raw)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("invalid backend URL %q: %v", raw, err)
 	}
-	return urll
+	return u
+}
+
+func newPoolFromURLs(rawURLs []string) *ServerPool {
+	pool := &ServerPool{Current: 0}
+	for _, raw := range rawURLs {
+		pool.Backends = append(pool.Backends, &Backend{
+			URL:   mustParseURL(raw),
+			Alive: true,
+		})
+	}
+	return pool
 }
 
 func main() {
-	backend1:=&Backend{URL: parseURL("http://localhost:9001"), Alive: true}
-	backend2:=&Backend{URL: parseURL("http://localhost:9002"), Alive: true}
-	serverPool := &ServerPool{
-		Backends: []*Backend{backend1, backend2},
-		Current:  0,
+	upstreamURLs := []string{
+		"http://localhost:8001",
+		"http://localhost:8002",
 	}
-	handler := &ProxyHandler{lb: serverPool}
-	fmt.Println("Running on :9000")
-	log.Fatal(http.ListenAndServe(":9000", handler))
+	pool := newPoolFromURLs(upstreamURLs)
+	proxy := &ProxyHandler{lb: pool}
+
+	fmt.Printf("Proxy listening on %s\n", listenPort)
+	log.Fatal(http.ListenAndServe(listenPort, proxy))
 }
