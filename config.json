@@ -1,11 +1,12 @@
 {
-  "port": 9000,
+  "port": 8000,
   "admin_port": 8081,
   "strategy": "round-robin",
   "health_check_frequency": "30s",
   "backends": [
-    "http://localhost:9001",
-    "http://localhost:9002",
-    "http://localhost:9003"
+    "http://localhost:8001",
+    "http://localhost:8002",
+    "http://localhost:8003"
   ]
 }
+
