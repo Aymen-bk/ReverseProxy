@@ -1,6 +1,7 @@
 package main
-
-import "net/url"
+import (
+	"net/url"
+)
 type LoadBalancer interface {
 	GetNextValidPeer() *Backend
 	AddBackend(backend *Backend)

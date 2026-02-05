@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"net/http/httputil"
+	"sync/atomic"
 )
 
 type ProxyHandler struct {
@@ -16,8 +17,8 @@ func (p *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	backend.AddConns(1)
-	defer backend.AddConns(-1)
+	atomic.AddInt64(&backend.CurrentConns, 1)
+	defer atomic.AddInt64(&backend.CurrentConns, -1)
 
 	proxy := httputil.NewSingleHostReverseProxy(backend.URL)
 

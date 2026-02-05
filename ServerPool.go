@@ -1,5 +1,5 @@
 package main
-a
+
 import (
 	"fmt"
 	"net/url"
@@ -9,7 +9,7 @@ import (
 
 type ServerPool struct {
 	Backends []*Backend `json:"backends"`
-	Current  uint64     `json:"current"` 
+	Current  uint64     `json:"current"`
 	mux      sync.RWMutex
 }
 
@@ -17,14 +17,14 @@ func (sp *ServerPool) GetNextValidPeer() *Backend {
 	sp.mux.RLock()
 	defer sp.mux.RUnlock()
 
-	if len(sp.Backends)==0 { //skip
+	if len(sp.Backends) == 0 {
 		return nil
 	}
 
-	rrindex :=atomic.AddUint64(&sp.Current,1) % uint64(len(sp.Backends))
+	rrindex := atomic.AddUint64(&sp.Current, 1) % uint64(len(sp.Backends))
 
 	for i := 0; i < len(sp.Backends); i++ {
-		idx:= (rrindex+uint64(i))% uint64(len(sp.Backends))
+		idx := (rrindex + uint64(i)) % uint64(len(sp.Backends))
 		backend := sp.Backends[idx]
 		backend.mux.RLock()
 		alive := backend.Alive
@@ -40,17 +40,27 @@ func (sp *ServerPool) GetNextValidPeer() *Backend {
 
 func (sp *ServerPool) AddBackend(backend *Backend) {
 	sp.mux.Lock()
+	defer sp.mux.Unlock()
 	sp.Backends = append(sp.Backends, backend)
 }
 
 func (sp *ServerPool) SetBackendStatus(uri *url.URL, alive bool) {
 	sp.mux.Lock()
 	defer sp.mux.Unlock()
-	for _ , backend := range sp.Backends {
+	for _, backend := range sp.Backends {
 		if backend.URL.String() == uri.String() {
-			backend.mux.Lock()
-			backend.Alive = alive
-			backend.mux.Unlock()
+			backend.SetAlive(alive)
+			return
+		}
+	}
+}
+
+func (sp *ServerPool) RemoveBackend(backendURL *url.URL) {
+	sp.mux.Lock()
+	defer sp.mux.Unlock()
+	for i, v := range sp.Backends {
+		if v.URL.String() == backendURL.String() {
+			sp.Backends = append(sp.Backends[:i], sp.Backends[i+1:]...)
 			return
 		}
 	}
