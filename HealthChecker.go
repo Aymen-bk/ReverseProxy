@@ -5,10 +5,12 @@ import (
 	"time"
 )
 
+// HealthChecker performs periodic health checks on all backends
 type HealthChecker struct {
 	serverPool *ServerPool
 }
 
+// Start begins the health checking process in a background goroutine
 func (hc *HealthChecker) Start(interval time.Duration) {
 	ticker := time.NewTicker(interval)
 	go func() {
@@ -20,6 +22,7 @@ func (hc *HealthChecker) Start(interval time.Duration) {
 	}()
 }
 
+// CheckAllBackends checks the health status of all backends in the pool
 func (hc *HealthChecker) CheckAllBackends() {
 	hc.serverPool.mux.RLock()
 	backends := make([]*Backend, len(hc.serverPool.Backends))
@@ -30,12 +33,11 @@ func (hc *HealthChecker) CheckAllBackends() {
 		status := "UP"
 		alive := backend.GetRealStatus()
 		backend.SetAlive(alive)
+		
 		if !alive {
 			status = "DOWN"
 		}
-		backend.mux.RLock()
-		conns := backend.CurrentConns
-		backend.mux.RUnlock()
-		log.Printf("%s is %s (connections: %d)", backend.URL.String(), status, conns)
+		log.Printf("%s is %s (connections: %d)", backend.URL.String(), status, backend.CurrentConns.Load())
 	}
 }
+

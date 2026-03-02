@@ -7,14 +7,16 @@ import (
 	"time"
 )
 
+// ProxyConfig holds the configuration for the reverse proxy
 type ProxyConfig struct {
 	Port            int           `json:"port"`
 	AdminPort       int           `json:"admin_port"`
-	Strategy        string        `json:"strategy"`
+	Strategy        string        `json:"strategy"` // e.g., "round-robin" or "least-conn"
 	HealthCheckFreq time.Duration `json:"health_check_frequency"`
-	Backends        []string      `json:"backends"`
+	Backends        []string      `json:"backends"` // Initial backend URLs
 }
 
+// proxyConfigJSON is used for JSON unmarshaling
 type proxyConfigJSON struct {
 	Port            int      `json:"port"`
 	AdminPort       int      `json:"admin_port"`
@@ -23,6 +25,7 @@ type proxyConfigJSON struct {
 	Backends        []string `json:"backends"`
 }
 
+// LoadConfig loads configuration from a JSON file
 func LoadConfig(filename string) (*ProxyConfig, error) {
 	file, err := os.Open(filename)
 	if err != nil {
@@ -37,12 +40,13 @@ func LoadConfig(filename string) (*ProxyConfig, error) {
 	}
 
 	config := &ProxyConfig{
-		Port:     configJSON.Port,
+		Port:      configJSON.Port,
 		AdminPort: configJSON.AdminPort,
-		Strategy: configJSON.Strategy,
-		Backends: configJSON.Backends,
+		Strategy:  configJSON.Strategy,
+		Backends:  configJSON.Backends,
 	}
 
+	// Parse health check frequency
 	if configJSON.HealthCheckFreq != "" {
 		duration, err := time.ParseDuration(configJSON.HealthCheckFreq)
 		if err != nil {
@@ -51,8 +55,9 @@ func LoadConfig(filename string) (*ProxyConfig, error) {
 		config.HealthCheckFreq = duration
 	}
 
+	// Set defaults if not specified
 	if config.Port == 0 {
-		config.Port = 9000
+		config.Port = 8000
 	}
 	if config.AdminPort == 0 {
 		config.AdminPort = 8081
@@ -66,3 +71,4 @@ func LoadConfig(filename string) (*ProxyConfig, error) {
 
 	return config, nil
 }
+

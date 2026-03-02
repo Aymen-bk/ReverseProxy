@@ -8,7 +8,9 @@ import (
 	"net/url"
 )
 
+// StartAdminServer starts the admin API server on the specified port
 func StartAdminServer(serverPool *ServerPool, port int) {
+	// GET /status - Return status of all backends
 	handleGetStatus := func(w http.ResponseWriter, r *http.Request) {
 		serverPool.mux.RLock()
 		backends := make([]*Backend, len(serverPool.Backends))
@@ -34,41 +36,50 @@ func StartAdminServer(serverPool *ServerPool, port int) {
 		json.NewEncoder(w).Encode(response)
 	}
 
+	// POST /backends - Add a new backend
 	handlePostBackends := func(w http.ResponseWriter, r *http.Request) {
 		var req struct {
 			URL string `json:"url"`
 		}
+
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+
 		u, err := url.Parse(req.URL)
 		if err != nil {
 			http.Error(w, "Invalid URL format", http.StatusBadRequest)
 			return
 		}
+
 		backend := &Backend{
 			URL:   u,
-			Alive: true,
+			Alive: true, // Assume alive initially, health checker will verify
 		}
+
 		serverPool.AddBackend(backend)
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(map[string]string{"message": "Backend added successfully"})
 	}
 
+	// DELETE /backends - Remove a backend
 	handleDeleteBackends := func(w http.ResponseWriter, r *http.Request) {
 		var req struct {
 			URL string `json:"url"`
 		}
+
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+
 		u, err := url.Parse(req.URL)
 		if err != nil {
 			http.Error(w, "Invalid URL format", http.StatusBadRequest)
 			return
 		}
+
 		serverPool.RemoveBackend(u)
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]string{"message": "Backend removed successfully"})
@@ -90,3 +101,4 @@ func StartAdminServer(serverPool *ServerPool, port int) {
 		log.Fatalf("Failed to start admin server: %v", err)
 	}
 }
+
