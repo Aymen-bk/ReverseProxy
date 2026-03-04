@@ -226,16 +226,4 @@ The proxy implements Round-Robin load balancing:
 - Invalid backend URLs are logged and skipped
 - Graceful shutdown handles in-flight requests
 
-## Future Enhancements
-
-- Least-Connections load balancing strategy
-- Weighted load balancing
-- Sticky sessions (session affinity)
-- HTTPS/TLS support
-- Metrics and monitoring endpoints
-- Request/response logging
-
-## License
-
-This project is part of a Go programming course final project.
 
